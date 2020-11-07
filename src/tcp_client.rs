@@ -7,9 +7,10 @@ use crate::Error;
 use bytes::{Bytes, BytesMut};
 use tokio::net::{TcpSocket, TcpStream};
 use std::net::SocketAddr;
-use crate::client::{Reply, Request};
+use crate::client::Request;
 use std::io::Cursor;
 use std::io;
+use onc_rpc::{RpcMessage, ReplyBody};
 
 const DEVICE_CORE_PROG: u32 = 0x0607af;
 
@@ -47,6 +48,7 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
 struct TcpClient {
     stream: TcpStream,
     info: RpcInfo,
+    xid: u32,
 }
 
 impl TcpClient {
@@ -55,17 +57,41 @@ impl TcpClient {
         let stream = socket.connect(addr.into()).await.map_err(Error::Io)?;
         Ok(Self {
             stream,
-            info
+            info,
+            xid: 0
         })
     }
 }
 
 #[async_trait]
 impl Client for TcpClient {
-    async fn call(&mut self, body: Request) -> crate::Result<Reply> {
+    async fn call(&mut self, body: Request) -> crate::Result<Bytes> {
         let mut cursor = Cursor::new(Vec::with_capacity(body.serialised_len() as usize));
         body.serialise_into(&mut cursor).map_err(Error::Io)?;
         send_record(&mut self.stream, &cursor.into_inner()).await.map_err(Error::Io)?;
-        unimplemented!()
+        loop {
+            let reply = recv_record(&mut self.stream).await.map_err(Error::Io)?;
+            let msg = RpcMessage::from_bytes(&reply).map_err(Error::Rpc)?;
+            if msg.xid() < self.xid {
+                continue
+            } else {
+                return Err(Error::UnexpectedXid {
+                    expected: self.xid,
+                    actual: msg.xid()
+                })
+            }
+            return if let Some(body) = msg.reply_body() {
+                match body {
+                    ReplyBody::Accepted(x) => {
+                        Ok(reply.slice(x.serialised_len() as usize..))
+                    },
+                    ReplyBody::Denied(_) => {
+                        Err(Error::RpcDenied)
+                    },
+                }
+            } else {
+                Err(Error::WrongMessageType)
+            }
+        }
     }
 }
