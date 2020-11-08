@@ -4,6 +4,7 @@ use thiserror::Error;
 mod tcp_client;
 mod client;
 mod portmapper;
+mod core_client;
 
 #[derive(Error, Debug)]
 pub enum Error {

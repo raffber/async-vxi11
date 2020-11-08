@@ -41,7 +41,7 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
     Ok(ret.freeze())
 }
 
-struct TcpClient {
+pub struct TcpClient {
     stream: TcpStream,
     xid: u32,
 }
