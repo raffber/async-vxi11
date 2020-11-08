@@ -3,6 +3,7 @@ use thiserror::Error;
 
 mod tcp_client;
 mod client;
+mod portmapper;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -21,6 +22,10 @@ pub enum Error {
     WrongMessageType,
     #[error("RPC denied")]
     RpcDenied,
+    #[error("XDR error")]
+    XdrError(xdr_rs_serialize::error::Error),
+    #[error("Invalid Port Number")]
+    InvalidPortNumber,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
