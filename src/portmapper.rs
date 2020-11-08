@@ -5,7 +5,6 @@ use xdr_rs_serialize::de::XDRIn;
 use onc_rpc::CallBody;
 use onc_rpc::auth::AuthFlavor;
 
-const PORT: u16 = 111;
 const PROG: u32 = 100000;
 const VERS: u32 = 2;
 

@@ -6,11 +6,12 @@ use byteorder::{ByteOrder, BigEndian};
 use crate::Error;
 use bytes::{Bytes, BytesMut};
 use tokio::net::{TcpSocket, TcpStream};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, IpAddr};
 use crate::client::Request;
 use std::io::Cursor;
 use std::io;
 use onc_rpc::{RpcMessage, ReplyBody, MessageType};
+use crate::portmapper::{PortMapper, IPProtocol};
 
 const DEVICE_CORE_PROG: u32 = 0x0607af;
 
@@ -53,6 +54,16 @@ impl TcpClient {
             stream,
             xid: 0
         })
+    }
+
+    pub async fn connect_with_mapper<T: Into<IpAddr>>(addr: T, prog: u32, vers: u32) -> crate::Result<Self> {
+        let addr = addr.into();
+        let mapper_addr = SocketAddr::new(addr, 111);
+        let mapper_client = TcpClient::connect(mapper_addr).await?;
+        let mut mapper = PortMapper::new(mapper_client);
+        let port = mapper.get_port(prog, vers, IPProtocol::TCP).await?;
+        let addr = SocketAddr::new(addr, port);
+        TcpClient::connect(addr).await
     }
 }
 
