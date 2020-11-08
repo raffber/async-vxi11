@@ -1,4 +1,4 @@
-use crate::client::Client;
+use crate::rpc::Client;
 use async_trait::async_trait;
 use tokio::prelude::{AsyncWrite, AsyncRead};
 use tokio::io::{AsyncWriteExt, AsyncReadExt};
@@ -7,7 +7,7 @@ use crate::Error;
 use bytes::{Bytes, BytesMut};
 use tokio::net::{TcpSocket, TcpStream};
 use std::net::{SocketAddr, IpAddr};
-use crate::client::Request;
+use crate::rpc::Request;
 use std::io::Cursor;
 use std::io;
 use onc_rpc::{RpcMessage, ReplyBody, MessageType};

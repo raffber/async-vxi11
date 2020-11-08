@@ -2,7 +2,7 @@ use std::io;
 use thiserror::Error;
 
 mod tcp_client;
-mod client;
+mod rpc;
 mod portmapper;
 mod core_client;
 

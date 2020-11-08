@@ -1,9 +1,10 @@
-
-use crate::client::Client;
-use xdr_rs_serialize::ser::XDROut;
-use xdr_rs_serialize::de::XDRIn;
-use onc_rpc::CallBody;
 use onc_rpc::auth::AuthFlavor;
+use onc_rpc::CallBody;
+use xdr_rs_serialize::de::XDRIn;
+use xdr_rs_serialize::ser::XDROut;
+
+use crate::rpc::{Client, Serialize};
+use crate::rpc;
 
 const PROG: u32 = 100000;
 const VERS: u32 = 2;
@@ -20,8 +21,9 @@ struct Mapping {
     port: u32,
 }
 
-impl Mapping {
-    fn write_xdr(&self, out: &mut Vec<u8>) {
+
+impl Serialize for Mapping {
+    fn serialize(&self, out: &mut Vec<u8>) {
         // actually cannot fail, because write_xdr call vec::write
         // which does not fail
         u32::write_xdr(&self.prog, out).unwrap();
@@ -31,8 +33,10 @@ impl Mapping {
     }
 }
 
+
 pub enum IPProtocol {
-    TCP, UDP
+    TCP,
+    UDP,
 }
 
 impl IPProtocol {
@@ -56,26 +60,18 @@ impl<C: Client> PortMapper<C> {
     }
 
     pub async fn get_port(&mut self, prog: u32, vers: u32, protocol: IPProtocol) -> crate::Result<u16> {
-        // formulate request
         let request = Mapping {
             prog,
             vers,
             prot: protocol.protid(),
-            port: 0
+            port: 0,
         };
-        let mut payload = Vec::new();
-        request.write_xdr(&mut payload);
 
-        // call
-        let req = self.client.make_request(PROG, VERS, PROC_GETPORT, payload);
-        let data = self.client.call(req).await?;
+        let ret: u32 = rpc::call(&mut self.client, &request, PROG, VERS, PROC_GETPORT).await?;
 
-        // deserialize
-        let (ret, _) = u32::read_xdr(&data).map_err(crate::Error::XdrError)?;
         if ret > 65535 {
             return Err(crate::Error::InvalidPortNumber);
         }
         Ok(ret as u16)
     }
-
 }
