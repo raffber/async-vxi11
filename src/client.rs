@@ -1,4 +1,4 @@
-use onc_rpc::{CallBody, AcceptedReply};
+use onc_rpc::CallBody;
 use async_trait::async_trait;
 use bytes::Bytes;
 

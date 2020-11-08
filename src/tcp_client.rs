@@ -10,14 +10,9 @@ use std::net::SocketAddr;
 use crate::client::Request;
 use std::io::Cursor;
 use std::io;
-use onc_rpc::{RpcMessage, ReplyBody};
+use onc_rpc::{RpcMessage, ReplyBody, MessageType};
 
 const DEVICE_CORE_PROG: u32 = 0x0607af;
-
-struct RpcInfo {
-    prog: u32,
-    vers: u32,
-}
 
 async fn send_record<T: AsyncWrite + Unpin, D: AsRef<[u8]>>(sock: &mut T, data: D) -> io::Result<()> {
     let data = data.as_ref();
@@ -47,17 +42,15 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
 
 struct TcpClient {
     stream: TcpStream,
-    info: RpcInfo,
     xid: u32,
 }
 
 impl TcpClient {
-    pub async fn connect<T: Into<SocketAddr>>(addr: T, info: RpcInfo) -> crate::Result<Self> {
+    pub async fn connect<T: Into<SocketAddr>>(addr: T) -> crate::Result<Self> {
         let socket = TcpSocket::new_v4().map_err(Error::Io)?;
         let stream = socket.connect(addr.into()).await.map_err(Error::Io)?;
         Ok(Self {
             stream,
-            info,
             xid: 0
         })
     }
@@ -66,20 +59,30 @@ impl TcpClient {
 #[async_trait]
 impl Client for TcpClient {
     async fn call(&mut self, body: Request) -> crate::Result<Bytes> {
-        let mut cursor = Cursor::new(Vec::with_capacity(body.serialised_len() as usize));
-        body.serialise_into(&mut cursor).map_err(Error::Io)?;
+        self.xid += 1;
+
+        // construct a message and serialize
+        let msg = RpcMessage::new(self.xid, MessageType::Call(body));
+        let buf = Vec::with_capacity(msg.serialised_len() as usize);
+        let mut cursor = Cursor::new(buf);
+        msg.serialise_into(&mut cursor).map_err(Error::Io)?;
+
+        // send data out
         send_record(&mut self.stream, &cursor.into_inner()).await.map_err(Error::Io)?;
+
+        // keep receiving data
         loop {
             let reply = recv_record(&mut self.stream).await.map_err(Error::Io)?;
             let msg = RpcMessage::from_bytes(&reply).map_err(Error::Rpc)?;
             if msg.xid() < self.xid {
                 continue
-            } else {
+            } else if msg.xid() > self.xid {
                 return Err(Error::UnexpectedXid {
                     expected: self.xid,
                     actual: msg.xid()
                 })
             }
+            // msg.xid() == self.xid()
             return if let Some(body) = msg.reply_body() {
                 match body {
                     ReplyBody::Accepted(x) => {
