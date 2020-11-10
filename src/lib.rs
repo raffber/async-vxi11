@@ -27,6 +27,9 @@ pub enum Error {
     XdrError(xdr_rs_serialize::error::Error),
     #[error("Invalid Port Number")]
     InvalidPortNumber,
+    #[error("VXI remote error")]
+    VxiRemoteError(u32),
 }
+
 
 pub type Result<T> = std::result::Result<T, Error>;
