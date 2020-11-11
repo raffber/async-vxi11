@@ -57,14 +57,13 @@ pub struct CoreClient {
 impl CoreClient {
     pub async fn connect<T: Into<IpAddr>>(addr: T) -> crate::Result<Self> {
         let client = TcpClient::connect_with_mapper(addr, PROG, VERS).await?;
-        let mut rng = rand::thread_rng();
 
         let mut ret = Self {
             client,
             abort_port: 0,
             options: Default::default(),
             max_recv_size: 0,
-            link_id: rng.gen_range(1_u32, 1000000_u32),
+            link_id: (rand::random::<u16>() + 1 + rand::random::<u16>()) as u32
         };
 
         ret.create_link(false, Default::default()).await?;

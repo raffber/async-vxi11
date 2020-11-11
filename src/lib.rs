@@ -6,7 +6,7 @@ mod rpc;
 mod portmapper;
 mod core;
 
-pub use core::client::{CoreClient, VxiOptions};
+pub use crate::core::client::{CoreClient, VxiOptions};
 
 #[derive(Error, Debug)]
 pub enum Error {
