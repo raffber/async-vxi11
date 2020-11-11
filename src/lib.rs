@@ -29,6 +29,8 @@ pub enum Error {
     InvalidPortNumber,
     #[error("VXI remote error")]
     VxiRemoteError(u32),
+    #[error("Write call did not complete to write all data")]
+    WriteFailedToWriteBuffer,
 }
 
 

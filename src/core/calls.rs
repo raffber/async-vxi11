@@ -5,7 +5,7 @@ use crate::Error;
 use crate::rpc::{Deserialize, Serialize};
 
 pub struct CreateLinkRequest {
-    pub client_id: i32,
+    pub link_id: u32,
     pub lock: bool,
     pub lock_timeout_ms: u32,
     pub device: String,
@@ -13,7 +13,7 @@ pub struct CreateLinkRequest {
 
 impl Serialize for CreateLinkRequest {
     fn serialize(&self, out: &mut Vec<u8>) {
-        self.client_id.write_xdr(out).unwrap();
+        self.link_id.write_xdr(out).unwrap();
         self.lock.write_xdr(out).unwrap();
         self.lock_timeout_ms.write_xdr(out).unwrap();
         self.device.write_xdr(out).unwrap();
@@ -76,5 +76,45 @@ impl Deserialize for DeviceWriteResponse {
             size,
         };
         Ok((ret, 8_usize))
+    }
+}
+
+pub struct DeviceReadRequest {
+    pub link_id: u32,
+    pub request_size: u32,
+    pub io_timeout: u32,
+    pub lock_timeout: u32,
+    pub flags: u32,
+    pub term_char: u32,
+}
+
+impl Serialize for DeviceReadRequest {
+    fn serialize(&self, out: &mut Vec<u8>) {
+        self.link_id.write_xdr(out).unwrap();
+        self.request_size.write_xdr(out).unwrap();
+        self.io_timeout.write_xdr(out).unwrap();
+        self.lock_timeout.write_xdr(out).unwrap();
+        self.flags.write_xdr(out).unwrap();
+        self.term_char.write_xdr(out).unwrap();
+    }
+}
+
+pub struct DeviceReadResponse {
+    pub error: u32,
+    pub reason: u32,
+    pub data: Vec<u8>,
+}
+
+impl Deserialize for DeviceReadResponse {
+    fn deserialize_partial(data: &[u8]) -> crate::Result<(Self, usize)> {
+        let (error, _) = u32::read_xdr(data).map_err(Error::XdrError)?;
+        let (reason, _) = u32::read_xdr(&data[4..]).map_err(Error::XdrError)?;
+        let (data, len) = Vec::<u8>::read_xdr(&data[8..]).map_err(Error::XdrError)?;
+        let ret = DeviceReadResponse {
+            error,
+            reason,
+            data
+        };
+        Ok((ret, (len + 8) as usize))
     }
 }
