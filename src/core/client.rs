@@ -29,7 +29,7 @@ const RX_END: u32 = 4;
 
 
 #[derive(Clone)]
-struct VxiOptions {
+pub struct VxiOptions {
     termchr: Option<u8>,
     lock_timeout: Duration,
     io_timeout: Duration,
@@ -45,7 +45,7 @@ impl Default for VxiOptions {
     }
 }
 
-struct CoreClient {
+pub struct CoreClient {
     client: TcpClient,
     abort_port: u16,
     pub options: VxiOptions,

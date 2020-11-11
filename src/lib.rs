@@ -1,10 +1,12 @@
 use std::io;
 use thiserror::Error;
 
-mod tcp_client;
+pub mod tcp_client;
 mod rpc;
 mod portmapper;
 mod core;
+
+pub use core::client::{CoreClient, VxiOptions};
 
 #[derive(Error, Debug)]
 pub enum Error {
