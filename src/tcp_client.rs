@@ -5,7 +5,7 @@ use tokio::io::{AsyncWriteExt, AsyncReadExt};
 use byteorder::{ByteOrder, BigEndian};
 use crate::Error;
 use bytes::{Bytes, BytesMut};
-use tokio::net::{TcpSocket, TcpStream};
+use tokio::net::TcpStream;
 use std::net::{SocketAddr, IpAddr};
 use crate::rpc::Request;
 use std::io::Cursor;
@@ -48,8 +48,7 @@ pub struct TcpClient {
 
 impl TcpClient {
     pub async fn connect<T: Into<SocketAddr>>(addr: T) -> crate::Result<Self> {
-        let socket = TcpSocket::new_v4().map_err(Error::Io)?;
-        let stream = socket.connect(addr.into()).await.map_err(Error::Io)?;
+        let stream = TcpStream::connect(addr.into()).await.map_err(Error::Io)?;
         Ok(Self {
             stream,
             xid: 0
