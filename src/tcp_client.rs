@@ -10,29 +10,30 @@ use std::net::{SocketAddr, IpAddr};
 use crate::rpc::Request;
 use std::io::Cursor;
 use std::io;
-use onc_rpc::{RpcMessage, ReplyBody, MessageType};
+use onc_rpc::{RpcMessage, ReplyBody, MessageType, AcceptedStatus};
 use crate::portmapper::{PortMapper, IPProtocol};
+use log;
 
 const DEVICE_CORE_PROG: u32 = 0x0607af;
 
 async fn send_record<T: AsyncWrite + Unpin, D: AsRef<[u8]>>(sock: &mut T, data: D) -> io::Result<()> {
     let data = data.as_ref();
     let len = data.len();
-    let mut buf= [0; 4];
-    let starter = len as u32 | 0x80000000_u32;
-    BigEndian::write_u32(&mut buf, starter);
-    sock.write_all(&buf).await?;
-    sock.write_all(data.as_ref()).await
+    sock.write_all(&data).await
 }
 
 async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
     let mut ret = BytesMut::new();
     loop {
-        let header = sock.read_u32().await?;
+        let mut header_data = [0_u8; 4];
+        sock.read_exact(&mut header_data).await?;
+        let header = BigEndian::read_u32(&header_data);
         let num =  header & 0x7fffffff;
-        ret.reserve(num as usize);
         let mut buf = vec![0_u8; num as usize];
         sock.read_exact(&mut buf).await?;
+
+        ret.reserve((num + 4) as usize);
+        ret.extend_from_slice(&header_data);
         ret.extend_from_slice(&buf);
         if header & 0x80000000 != 0 {
             break;
@@ -84,6 +85,7 @@ impl Client for TcpClient {
         loop {
             let reply = recv_record(&mut self.stream).await.map_err(Error::Io)?;
             let msg = RpcMessage::from_bytes(&reply).map_err(Error::Rpc)?;
+            let header_len = msg.serialised_len();
             if msg.xid() < self.xid {
                 continue
             } else if msg.xid() > self.xid {
@@ -96,7 +98,11 @@ impl Client for TcpClient {
             return if let Some(body) = msg.reply_body() {
                 match body {
                     ReplyBody::Accepted(x) => {
-                        Ok(reply.slice(x.serialised_len() as usize..))
+                        let status = x.status();
+                        match status {
+                            AcceptedStatus::Success(data) => Ok(Bytes::copy_from_slice(data)),
+                            _ => Err(Error::RpcInvalidArgs)
+                        }
                     },
                     ReplyBody::Denied(_) => {
                         Err(Error::RpcDenied)

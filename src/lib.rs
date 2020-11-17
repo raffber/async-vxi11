@@ -33,6 +33,8 @@ pub enum Error {
     VxiRemoteError(u32),
     #[error("Write call did not complete to write all data")]
     WriteFailedToWriteBuffer,
+    #[error("Invalid RPC args")]
+    RpcInvalidArgs,
 }
 
 

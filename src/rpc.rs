@@ -51,6 +51,8 @@ pub async fn call<C: Client, Req: Serialize, Resp: Deserialize>(client: &mut C, 
     let mut payload = Vec::new();
     req.serialize(&mut payload);
     let req = client.make_request(prog, vers, call, payload);
+    log::debug!("Initiating call from prog={}, call={}", prog, call);
     let data = client.call(req).await?;
+    log::debug!("Got response with length: {}", data.len());
     Resp::deserialize(&data)
 }
