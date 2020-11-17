@@ -1,12 +1,13 @@
 use std::io;
+
 use thiserror::Error;
+
+pub use crate::core::client::{CoreClient, VxiOptions};
 
 pub mod tcp_client;
 mod rpc;
 mod portmapper;
 mod core;
-
-pub use crate::core::client::{CoreClient, VxiOptions};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -19,7 +20,7 @@ pub enum Error {
     #[error("Unexpected xid")]
     UnexpectedXid {
         expected: u32,
-        actual: u32
+        actual: u32,
     },
     #[error("Wrong message type")]
     WrongMessageType,

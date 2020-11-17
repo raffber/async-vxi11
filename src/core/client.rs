@@ -60,7 +60,7 @@ impl CoreClient {
             abort_port: 0,
             options: Default::default(),
             max_recv_size: 0,
-            link_id: rnd1 + rnd2 + 1
+            link_id: rnd1 + rnd2 + 1,
         };
         ret.create_link(false, Default::default()).await?;
         Ok(ret)

@@ -113,7 +113,7 @@ impl Deserialize for DeviceReadResponse {
         let ret = DeviceReadResponse {
             error,
             reason,
-            data
+            data,
         };
         Ok((ret, (len + 8) as usize))
     }
