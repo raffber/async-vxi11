@@ -1,6 +1,3 @@
-use onc_rpc::auth::AuthFlavor;
-use onc_rpc::CallBody;
-use xdr_rs_serialize::de::XDRIn;
 use xdr_rs_serialize::ser::XDROut;
 
 use crate::rpc::{Client, Serialize};
@@ -12,7 +9,6 @@ const VERS: u32 = 2;
 const PROC_GETPORT: u32 = 3;
 
 const IPPROTO_TCP: u32 = 6;
-const IPPROTO_UDP: u32 = 17;
 
 struct Mapping {
     prog: u32,
@@ -33,21 +29,6 @@ impl Serialize for Mapping {
     }
 }
 
-
-pub enum IPProtocol {
-    TCP,
-    UDP,
-}
-
-impl IPProtocol {
-    fn protid(&self) -> u32 {
-        match self {
-            IPProtocol::TCP => IPPROTO_TCP,
-            IPProtocol::UDP => IPPROTO_UDP,
-        }
-    }
-}
-
 pub struct PortMapper<C: Client> {
     client: C
 }
@@ -59,11 +40,11 @@ impl<C: Client> PortMapper<C> {
         }
     }
 
-    pub async fn get_port(&mut self, prog: u32, vers: u32, protocol: IPProtocol) -> crate::Result<u16> {
+    pub async fn get_port(&mut self, prog: u32, vers: u32) -> crate::Result<u16> {
         let request = Mapping {
             prog,
             vers,
-            prot: protocol.protid(),
+            prot: IPPROTO_TCP,
             port: 0,
         };
 

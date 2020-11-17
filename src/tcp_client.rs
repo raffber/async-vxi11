@@ -1,24 +1,22 @@
-use crate::rpc::Client;
-use async_trait::async_trait;
-use tokio::prelude::{AsyncWrite, AsyncRead};
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
-use byteorder::{ByteOrder, BigEndian};
-use crate::Error;
-use bytes::{Bytes, BytesMut};
-use tokio::net::TcpStream;
-use std::net::{SocketAddr, IpAddr};
-use crate::rpc::Request;
-use std::io::Cursor;
 use std::io;
-use onc_rpc::{RpcMessage, ReplyBody, MessageType, AcceptedStatus};
-use crate::portmapper::{PortMapper, IPProtocol};
-use log;
+use std::io::Cursor;
+use std::net::{IpAddr, SocketAddr};
 
-const DEVICE_CORE_PROG: u32 = 0x0607af;
+use async_trait::async_trait;
+use byteorder::{BigEndian, ByteOrder};
+use bytes::{Bytes, BytesMut};
+use onc_rpc::{AcceptedStatus, MessageType, ReplyBody, RpcMessage};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::prelude::{AsyncRead, AsyncWrite};
+
+use crate::Error;
+use crate::portmapper::PortMapper;
+use crate::rpc::Client;
+use crate::rpc::Request;
 
 async fn send_record<T: AsyncWrite + Unpin, D: AsRef<[u8]>>(sock: &mut T, data: D) -> io::Result<()> {
     let data = data.as_ref();
-    let len = data.len();
     sock.write_all(&data).await
 }
 
@@ -28,7 +26,7 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
         let mut header_data = [0_u8; 4];
         sock.read_exact(&mut header_data).await?;
         let header = BigEndian::read_u32(&header_data);
-        let num =  header & 0x7fffffff;
+        let num = header & 0x7fffffff;
         let mut buf = vec![0_u8; num as usize];
         sock.read_exact(&mut buf).await?;
 
@@ -52,7 +50,7 @@ impl TcpClient {
         let stream = TcpStream::connect(addr.into()).await.map_err(Error::Io)?;
         Ok(Self {
             stream,
-            xid: 0
+            xid: 0,
         })
     }
 
@@ -61,7 +59,7 @@ impl TcpClient {
         let mapper_addr = SocketAddr::new(addr, 111);
         let mapper_client = TcpClient::connect(mapper_addr).await?;
         let mut mapper = PortMapper::new(mapper_client);
-        let port = mapper.get_port(prog, vers, IPProtocol::TCP).await?;
+        let port = mapper.get_port(prog, vers).await?;
         let addr = SocketAddr::new(addr, port);
         TcpClient::connect(addr).await
     }
@@ -85,14 +83,13 @@ impl Client for TcpClient {
         loop {
             let reply = recv_record(&mut self.stream).await.map_err(Error::Io)?;
             let msg = RpcMessage::from_bytes(&reply).map_err(Error::Rpc)?;
-            let header_len = msg.serialised_len();
             if msg.xid() < self.xid {
-                continue
+                continue;
             } else if msg.xid() > self.xid {
                 return Err(Error::UnexpectedXid {
                     expected: self.xid,
-                    actual: msg.xid()
-                })
+                    actual: msg.xid(),
+                });
             }
             // msg.xid() == self.xid()
             return if let Some(body) = msg.reply_body() {
@@ -103,14 +100,14 @@ impl Client for TcpClient {
                             AcceptedStatus::Success(data) => Ok(Bytes::copy_from_slice(data)),
                             _ => Err(Error::RpcInvalidArgs)
                         }
-                    },
+                    }
                     ReplyBody::Denied(_) => {
                         Err(Error::RpcDenied)
-                    },
+                    }
                 }
             } else {
                 Err(Error::WrongMessageType)
-            }
+            };
         }
     }
 }

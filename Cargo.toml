@@ -14,3 +14,6 @@ bytes = "0.6.0"
 async-trait = "0.1.41"
 rand = "0.7.3"
 log = "0.4"
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["io-util", "net", "rt-threaded", "macros"] }

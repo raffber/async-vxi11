@@ -1,13 +1,8 @@
 use std::net::IpAddr;
 use std::time::Duration;
 
-use rand::Rng;
-use xdr_rs_serialize::de::XDRIn;
-use xdr_rs_serialize::ser::XDROut;
-
 use crate::{Error, rpc};
 use crate::core::calls::{CreateLinkRequest, CreateLinkResponse, DeviceReadRequest, DeviceReadResponse, DeviceWriteRequest, DeviceWriteResponse};
-use crate::rpc::{Deserialize, Serialize};
 use crate::tcp_client::TcpClient;
 
 const PROG: u32 = 0x0607af;
@@ -20,7 +15,6 @@ const CALL_DEVICE_READ: u32 = 12;
 
 const IO_TIMEOUT_MS: u64 = 1000;
 
-const OP_FLAG_WAIT_BLOCK: u32 = 1;
 const OP_FLAG_END: u32 = 8;
 const OP_FLAG_TERMCHAR_SET: u32 = 128;
 
@@ -113,7 +107,6 @@ impl CoreClient {
             // slice data up in multiple chunks
             let max_idx = data.len().min(self.max_recv_size as usize);
             let send: Vec<u8> = data.drain(0..max_idx).collect();
-            let send_len = send.len();
             if data.len() == 0 {
                 flags |= OP_FLAG_END;
             }
@@ -121,15 +114,12 @@ impl CoreClient {
                 link_id: self.link_id,
                 io_timeout: self.options.io_timeout.as_millis() as u32,
                 lock_timeout: self.options.lock_timeout.as_millis() as u32,
-                flags: 0,
+                flags,
                 data: send,
             };
             let resp: DeviceWriteResponse = rpc::call(&mut self.client, &request, PROG, VERS, CALL_DEVICE_WRITE).await?;
             if resp.error != 0 {
                 return Err(Error::VxiRemoteError(resp.error));
-            }
-            if resp.size < send_len as u32 {
-                return Err(Error::WriteFailedToWriteBuffer);
             }
         }
         Ok(())
