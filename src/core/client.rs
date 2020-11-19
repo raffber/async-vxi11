@@ -102,10 +102,6 @@ impl CoreClient {
     pub async fn device_write(&mut self, data: Vec<u8>) -> crate::Result<()> {
         let mut data = data;
         let mut flags = 0_u32;
-        if let Some(term) = self.options.termchr {
-            flags |= OP_FLAG_TERMCHAR_SET;
-            data.push(term);
-        }
         while data.len() > 0 {
             // slice data up in multiple chunks
             let max_idx = data.len().min(self.max_recv_size as usize);
