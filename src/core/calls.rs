@@ -5,7 +5,7 @@ use crate::Error;
 use crate::rpc::{Deserialize, Serialize};
 
 pub struct CreateLinkRequest {
-    pub link_id: u32,
+    pub client_id: u32,
     pub lock: bool,
     pub lock_timeout_ms: u32,
     pub device: String,
@@ -13,7 +13,7 @@ pub struct CreateLinkRequest {
 
 impl Serialize for CreateLinkRequest {
     fn serialize(&self, out: &mut Vec<u8>) {
-        self.link_id.write_xdr(out).unwrap();
+        self.client_id.write_xdr(out).unwrap();
         self.lock.write_xdr(out).unwrap();
         self.lock_timeout_ms.write_xdr(out).unwrap();
         self.device.write_xdr(out).unwrap();

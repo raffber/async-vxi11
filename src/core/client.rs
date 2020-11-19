@@ -45,6 +45,7 @@ pub struct CoreClient {
     pub options: VxiOptions,
     max_recv_size: u32,
     link_id: u32,
+    client_id: u32,
 }
 
 
@@ -60,7 +61,8 @@ impl CoreClient {
             abort_port: 0,
             options: Default::default(),
             max_recv_size: 0,
-            link_id: rnd1 + rnd2 + 1,
+            client_id: rnd1 + rnd2 + 1,
+            link_id: 0
         };
         ret.create_link(false, Default::default()).await?;
         Ok(ret)
@@ -68,12 +70,13 @@ impl CoreClient {
 
     async fn create_link(&mut self, lock: bool, lock_timeout: Duration) -> crate::Result<()> {
         let req = CreateLinkRequest {
-            link_id: self.link_id,
+            client_id: self.client_id,
             lock,
             lock_timeout_ms: lock_timeout.as_millis() as u32,
             device: "instr".to_string(),
         };
         let resp: CreateLinkResponse = rpc::call(&mut self.client, &req, PROG, VERS, CALL_CREATE_LINK).await?;
+        self.link_id = resp.link_id;
         self.max_recv_size = resp.max_recv_size.min(1024 * 1024);
         if resp.port < 65535 {
             self.abort_port = resp.port as u16;
