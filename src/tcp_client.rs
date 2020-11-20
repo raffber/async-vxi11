@@ -22,6 +22,7 @@ async fn send_record<T: AsyncWrite + Unpin, D: AsRef<[u8]>>(sock: &mut T, data: 
 
 async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
     let mut ret = BytesMut::new();
+    let mut first = true;
     loop {
         let mut header_data = [0_u8; 4];
         sock.read_exact(&mut header_data).await?;
@@ -29,14 +30,23 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
         let num = header & 0x7fffffff;
         let mut buf = vec![0_u8; num as usize];
         sock.read_exact(&mut buf).await?;
-
-        ret.reserve((num + 4) as usize);
-        ret.extend_from_slice(&header_data);
+        if first {
+            ret.reserve((num + 4) as usize);
+            ret.extend_from_slice(&header_data);
+            first = false;
+        }
         ret.extend_from_slice(&buf);
         if header & 0x80000000 != 0 {
             break;
         }
     }
+    if ret.len() < 4 {
+        return Ok(ret.freeze());
+    }
+    let new_header = 0x80000000 | ( (ret.len() - 4) as u32);
+    // unwrap() is ok because we checked for len() >= 4 before
+    let header_slice = ret.get_mut(0..4).unwrap();
+    BigEndian::write_u32(header_slice, new_header);
     Ok(ret.freeze())
 }
 
