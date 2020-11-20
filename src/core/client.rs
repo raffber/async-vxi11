@@ -73,7 +73,7 @@ impl CoreClient {
             client_id: self.client_id,
             lock,
             lock_timeout_ms: lock_timeout.as_millis() as u32,
-            device: "instr".to_string(),
+            device: "inst0".to_string(),
         };
         let resp: CreateLinkResponse = rpc::call(&mut self.client, &req, PROG, VERS, CALL_CREATE_LINK).await?;
         self.link_id = resp.link_id;
