@@ -62,7 +62,7 @@ impl CoreClient {
             options: Default::default(),
             max_recv_size: 0,
             client_id: rnd1 + rnd2 + 1,
-            link_id: 0
+            link_id: 0,
         };
         ret.create_link(false, Default::default()).await?;
         Ok(ret)

@@ -10,12 +10,6 @@ pub type Request = CallBody<Vec<u8>, Vec<u8>>;
 #[async_trait]
 pub trait Client {
     async fn call(&mut self, body: Request) -> crate::Result<Bytes>;
-
-    fn make_request(&self, prog: u32, vers: u32, proc: u32, payload: Vec<u8>) -> Request {
-        CallBody::new(prog, vers, proc,
-                      AuthFlavor::AuthNone(None),
-                      AuthFlavor::AuthNone(None), payload)
-    }
 }
 
 pub trait Serialize {
@@ -50,7 +44,9 @@ impl<T: XDRIn> Deserialize for T {
 pub async fn call<C: Client, Req: Serialize, Resp: Deserialize>(client: &mut C, req: &Req, prog: u32, vers: u32, call: u32) -> crate::Result<Resp> {
     let mut payload = Vec::new();
     req.serialize(&mut payload);
-    let req = client.make_request(prog, vers, call, payload);
+    let req = CallBody::new(prog, vers, call,
+                            AuthFlavor::AuthNone(None),
+                            AuthFlavor::AuthNone(None), payload);
     log::debug!("Initiating call from prog={}, call={}", prog, call);
     let data = client.call(req).await?;
     log::debug!("Got response with length: {}", data.len());

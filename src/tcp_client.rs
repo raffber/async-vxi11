@@ -43,7 +43,7 @@ async fn recv_record<T: AsyncRead + Unpin>(sock: &mut T) -> io::Result<Bytes> {
     if ret.len() < 4 {
         return Ok(ret.freeze());
     }
-    let new_header = 0x80000000 | ( (ret.len() - 4) as u32);
+    let new_header = 0x80000000 | ((ret.len() - 4) as u32);
     // unwrap() is ok because we checked for len() >= 4 before
     let header_slice = ret.get_mut(0..4).unwrap();
     BigEndian::write_u32(header_slice, new_header);
