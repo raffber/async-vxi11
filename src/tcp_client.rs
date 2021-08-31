@@ -8,7 +8,7 @@ use bytes::{Bytes, BytesMut};
 use onc_rpc::{AcceptedStatus, MessageType, ReplyBody, RpcMessage};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::prelude::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::Error;
 use crate::portmapper::PortMapper;
