@@ -1,12 +1,22 @@
+//! This crate provides an asynchronous *client* implementation for the the VXI-11 protcol.
+//!
+//! The transport layer is represented in the [`rpc::Client`] trait and implemented both for
+//! `tokio` (with [`tokio::TcpClient`]) and `async-std` (with [`async_std::TcpClient`]).
+//! The `tokio` (default) and the `async-std` features enable the conditional compilation of above modules.
+//! It is also possible to deactive both features and to provide a custom [`rpc::Client`] implementation.
+//!
+//! Main rpc client is implemented with the [`CoreClient<T: Client>`][core::client::CoreClient]
+//!
 use std::io;
 
 use thiserror::Error;
 
 pub use crate::core::client::{CoreClient, VxiOptions};
+pub use rpc::{Client, Deserialize, Serialize};
 
-mod core;
-mod portmapper;
-mod rpc;
+pub mod core;
+pub mod portmapper;
+pub mod rpc;
 
 #[cfg(feature = "tokio")]
 pub mod tokio;

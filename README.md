@@ -1,6 +1,6 @@
 # Async VXI-11
 
-Async VXI-11 library, supporting both `async-std` and `tokio`.
+Async VXI-11 client library, supporting both `async-std` and `tokio`.
 
 This implementation does not attempt to be a complete VXI-11 implementation but only implements the features the author(s) require. If you are missing a feature, please open an issue or a PR.
 
