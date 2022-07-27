@@ -10,7 +10,7 @@ use byteorder::{BigEndian, ByteOrder};
 use bytes::{Bytes, BytesMut};
 use onc_rpc::{AcceptedStatus, MessageType, ReplyBody, RpcMessage};
 
-use crate::portmapper::PortMapper;
+use crate::portmapper::get_port;
 use crate::rpc::Client;
 use crate::rpc::Request;
 use crate::Error;
@@ -35,9 +35,8 @@ impl Client for TcpClient {
     {
         let addr = addr.into();
         let mapper_addr = SocketAddr::new(addr, 111);
-        let mapper_client = TcpClient::connect(mapper_addr).await?;
-        let mut mapper = PortMapper::new(mapper_client);
-        let port = mapper.get_port(prog, vers).await?;
+        let mut mapper_client = TcpClient::connect(mapper_addr).await?;
+        let port = get_port(&mut mapper_client, prog, vers).await?;
         let addr = SocketAddr::new(addr, port);
         TcpClient::connect(addr).await
     }

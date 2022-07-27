@@ -7,6 +7,16 @@
 //!
 //! Main rpc client is implemented with the [`CoreClient<T: Client>`][core::client::CoreClient]
 //!
+//! VXI-11 is a somewhat old and exotic protocol. It's a stack of a few technologies (specs linked):
+//!  
+//!  - [XDR](https://tools.ietf.org/html/rfc4506) - a very simple serialization format
+//!  - [ONC-RPC](https://tools.ietf.org/html/rfc5531#section-9) - Also known as [SUN RPC](https://en.wikipedia.org/wiki/Sun_RPC). It uses XDR.
+//!  - The [port mapper](https://tools.ietf.org/html/rfc1833) protocol is a protcol on top of ONC-RPC used to establish
+//!     a connection to a server. A client first ask the sever over this protocol to which
+//!     port it should connect. The port of the portmapper protocol is standardized to 111.
+//!  - [VXI-11](https://www.vxibus.org/specifications.html) uses the port mapper protocol to connect a client to a server and adds additional RPC calls.
+//!     However, most communication still behaves as a byte stream using a write and a read RPC.
+//!
 use std::io;
 
 use thiserror::Error;

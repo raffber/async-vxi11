@@ -28,28 +28,26 @@ impl Serialize for Mapping {
     }
 }
 
-pub struct PortMapper<C: Client> {
-    client: C,
-}
+/// This function implements the port mapper RPC protocol. When connecting to a VXI-11 server
+/// the client first connects to a special port and asks the server over which port
+/// the client should connect to. In order to find out, it perfoms a port mapper RPC call
+/// upon which the server returns the desired port number.
+///
+/// The client usually proceeds to connect to establish a connection to the returned port.
+///
+/// The port mapper RPC call is specified in [IETF RFC 1833](https://tools.ietf.org/html/rfc1833)
+pub async fn get_port<C: Client>(client: &mut C, prog: u32, vers: u32) -> crate::Result<u16> {
+    let request = Mapping {
+        prog,
+        vers,
+        prot: IPPROTO_TCP,
+        port: 0,
+    };
 
-impl<C: Client> PortMapper<C> {
-    pub fn new(client: C) -> Self {
-        Self { client }
+    let ret: u32 = rpc::call(client, &request, PROG, VERS, PROC_GETPORT).await?;
+
+    if ret > 65535 {
+        return Err(crate::Error::InvalidPortNumber);
     }
-
-    pub async fn get_port(&mut self, prog: u32, vers: u32) -> crate::Result<u16> {
-        let request = Mapping {
-            prog,
-            vers,
-            prot: IPPROTO_TCP,
-            port: 0,
-        };
-
-        let ret: u32 = rpc::call(&mut self.client, &request, PROG, VERS, PROC_GETPORT).await?;
-
-        if ret > 65535 {
-            return Err(crate::Error::InvalidPortNumber);
-        }
-        Ok(ret as u16)
-    }
+    Ok(ret as u16)
 }
