@@ -1,8 +1,8 @@
 use xdr_rs_serialize::de::XDRIn;
 use xdr_rs_serialize::ser::XDROut;
 
-use crate::Error;
 use crate::rpc::{Deserialize, Serialize};
+use crate::Error;
 
 pub struct CreateLinkRequest {
     pub client_id: u32,
@@ -30,9 +30,9 @@ pub struct CreateLinkResponse {
 impl Deserialize for CreateLinkResponse {
     fn deserialize_partial(data: &[u8]) -> crate::Result<(Self, usize)> {
         let (error, _) = u32::read_xdr(&data[0..]).map_err(Error::XdrError)?;
-        let (link_id, _) = u32::read_xdr(&data[4 as usize..]).map_err(Error::XdrError)?;
-        let (port, _) = u32::read_xdr(&data[8 as usize..]).map_err(Error::XdrError)?;
-        let (max_recv_size, _) = u32::read_xdr(&data[12 as usize..]).map_err(Error::XdrError)?;
+        let (link_id, _) = u32::read_xdr(&data[4_usize..]).map_err(Error::XdrError)?;
+        let (port, _) = u32::read_xdr(&data[8_usize..]).map_err(Error::XdrError)?;
+        let (max_recv_size, _) = u32::read_xdr(&data[12_usize..]).map_err(Error::XdrError)?;
 
         let ret = CreateLinkResponse {
             error,
@@ -40,7 +40,7 @@ impl Deserialize for CreateLinkResponse {
             port,
             max_recv_size,
         };
-        Ok((ret, 16 as usize))
+        Ok((ret, 16_usize))
     }
 }
 
@@ -70,11 +70,8 @@ pub struct DeviceWriteResponse {
 impl Deserialize for DeviceWriteResponse {
     fn deserialize_partial(data: &[u8]) -> crate::Result<(Self, usize)> {
         let (error, _) = u32::read_xdr(data).map_err(Error::XdrError)?;
-        let (size, _) = u32::read_xdr(&data[4 as usize..]).map_err(Error::XdrError)?;
-        let ret = DeviceWriteResponse {
-            error,
-            size,
-        };
+        let (size, _) = u32::read_xdr(&data[4_usize..]).map_err(Error::XdrError)?;
+        let ret = DeviceWriteResponse { error, size };
         Ok((ret, 8_usize))
     }
 }

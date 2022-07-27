@@ -60,13 +60,15 @@ impl Client for TcpClient {
         loop {
             let reply = recv_record(&mut self.stream).await.map_err(Error::Io)?;
             let msg = RpcMessage::from_bytes(&reply).map_err(Error::Rpc)?;
-            if msg.xid() < self.xid {
-                continue;
-            } else if msg.xid() > self.xid {
-                return Err(Error::UnexpectedXid {
-                    expected: self.xid,
-                    actual: msg.xid(),
-                });
+            match msg.xid() {
+                x if x > self.xid => continue,
+                x if x < self.xid => {
+                    return Err(Error::UnexpectedXid {
+                        expected: self.xid,
+                        actual: msg.xid(),
+                    });
+                }
+                _ => {}
             }
             // msg.xid() == self.xid()
             return if let Some(body) = msg.reply_body() {

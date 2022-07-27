@@ -1,2 +1,2 @@
-pub mod client;
 mod calls;
+pub mod client;

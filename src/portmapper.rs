@@ -1,7 +1,7 @@
 use xdr_rs_serialize::ser::XDROut;
 
-use crate::rpc::{Client, Serialize};
 use crate::rpc;
+use crate::rpc::{Client, Serialize};
 
 const PROG: u32 = 100000;
 const VERS: u32 = 2;
@@ -17,7 +17,6 @@ struct Mapping {
     port: u32,
 }
 
-
 impl Serialize for Mapping {
     fn serialize(&self, out: &mut Vec<u8>) {
         // actually cannot fail, because write_xdr call vec::write
@@ -30,14 +29,12 @@ impl Serialize for Mapping {
 }
 
 pub struct PortMapper<C: Client> {
-    client: C
+    client: C,
 }
 
 impl<C: Client> PortMapper<C> {
     pub fn new(client: C) -> Self {
-        Self {
-            client
-        }
+        Self { client }
     }
 
     pub async fn get_port(&mut self, prog: u32, vers: u32) -> crate::Result<u16> {

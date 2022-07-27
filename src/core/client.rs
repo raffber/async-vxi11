@@ -111,11 +111,11 @@ impl<T: Client> CoreClient<T> {
     pub async fn device_write(&mut self, data: Vec<u8>) -> crate::Result<()> {
         let mut data = data;
         let mut flags = 0_u32;
-        while data.len() > 0 {
+        while !data.is_empty() {
             // slice data up in multiple chunks
             let max_idx = data.len().min(self.max_recv_size as usize);
             let send: Vec<u8> = data.drain(0..max_idx).collect();
-            if data.len() == 0 {
+            if data.is_empty() {
                 flags |= OP_FLAG_END;
             }
             let request = DeviceWriteRequest {
