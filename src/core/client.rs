@@ -1,9 +1,12 @@
 use std::net::IpAddr;
 use std::time::Duration;
 
-use crate::{Error, rpc};
-use crate::core::calls::{CreateLinkRequest, CreateLinkResponse, DeviceReadRequest, DeviceReadResponse, DeviceWriteRequest, DeviceWriteResponse};
-use crate::tcp_client::TcpClient;
+use crate::core::calls::{
+    CreateLinkRequest, CreateLinkResponse, DeviceReadRequest, DeviceReadResponse,
+    DeviceWriteRequest, DeviceWriteResponse,
+};
+use crate::rpc::Client;
+use crate::{rpc, Error};
 
 const PROG: u32 = 0x0607af;
 const VERS: u32 = 1;
@@ -20,7 +23,6 @@ const OP_FLAG_TERMCHAR_SET: u32 = 128;
 
 const RX_CHR: u32 = 2;
 const RX_END: u32 = 4;
-
 
 #[derive(Clone)]
 pub struct VxiOptions {
@@ -39,8 +41,8 @@ impl Default for VxiOptions {
     }
 }
 
-pub struct CoreClient {
-    client: TcpClient,
+pub struct CoreClient<T: Client> {
+    client: T,
     abort_port: u16,
     pub options: VxiOptions,
     max_recv_size: u32,
@@ -48,10 +50,9 @@ pub struct CoreClient {
     client_id: u32,
 }
 
-
-impl CoreClient {
-    pub async fn connect<T: Into<IpAddr>>(addr: T) -> crate::Result<Self> {
-        let client = TcpClient::connect_with_mapper(addr, PROG, VERS).await?;
+impl<T: Client> CoreClient<T> {
+    pub async fn connect<A: Into<IpAddr> + Send>(addr: A) -> crate::Result<Self> {
+        let client = T::connect_with_mapper(addr, PROG, VERS).await?;
 
         let rnd1 = rand::random::<u16>() as u32;
         let rnd2 = rand::random::<u16>() as u32;
@@ -75,7 +76,8 @@ impl CoreClient {
             lock_timeout_ms: lock_timeout.as_millis() as u32,
             device: "inst0".to_string(),
         };
-        let resp: CreateLinkResponse = rpc::call(&mut self.client, &req, PROG, VERS, CALL_CREATE_LINK).await?;
+        let resp: CreateLinkResponse =
+            rpc::call(&mut self.client, &req, PROG, VERS, CALL_CREATE_LINK).await?;
         self.link_id = resp.link_id;
         self.max_recv_size = resp.max_recv_size.min(1024 * 1024);
         if resp.port < 65535 {
@@ -91,7 +93,14 @@ impl CoreClient {
     }
 
     pub async fn destroy_link(mut self) -> crate::Result<()> {
-        let err: u32 = rpc::call(&mut self.client, &self.link_id, PROG, VERS, CALL_DESTROY_LINK).await?;
+        let err: u32 = rpc::call(
+            &mut self.client,
+            &self.link_id,
+            PROG,
+            VERS,
+            CALL_DESTROY_LINK,
+        )
+        .await?;
         if err != 0 {
             Err(Error::VxiRemoteError(err))
         } else {
@@ -116,7 +125,8 @@ impl CoreClient {
                 flags,
                 data: send,
             };
-            let resp: DeviceWriteResponse = rpc::call(&mut self.client, &request, PROG, VERS, CALL_DEVICE_WRITE).await?;
+            let resp: DeviceWriteResponse =
+                rpc::call(&mut self.client, &request, PROG, VERS, CALL_DEVICE_WRITE).await?;
             if resp.error != 0 {
                 return Err(Error::VxiRemoteError(resp.error));
             }
@@ -143,7 +153,8 @@ impl CoreClient {
                 flags,
                 term_char,
             };
-            let resp: DeviceReadResponse = rpc::call(&mut self.client, &request, PROG, VERS, CALL_DEVICE_READ).await?;
+            let resp: DeviceReadResponse =
+                rpc::call(&mut self.client, &request, PROG, VERS, CALL_DEVICE_READ).await?;
             if resp.error != 0 {
                 return Err(Error::VxiRemoteError(resp.error));
             }

@@ -4,10 +4,15 @@ use thiserror::Error;
 
 pub use crate::core::client::{CoreClient, VxiOptions};
 
-pub mod tcp_client;
-mod rpc;
-mod portmapper;
 mod core;
+mod portmapper;
+mod rpc;
+
+#[cfg(feature = "tokio")]
+pub mod tokio;
+
+#[cfg(feature = "async-std")]
+pub mod async_std;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -18,10 +23,7 @@ pub enum Error {
     #[error("RPC Error: {0}")]
     Rpc(onc_rpc::Error),
     #[error("Unexpected xid")]
-    UnexpectedXid {
-        expected: u32,
-        actual: u32,
-    },
+    UnexpectedXid { expected: u32, actual: u32 },
     #[error("Wrong message type")]
     WrongMessageType,
     #[error("RPC denied")]
@@ -35,6 +37,5 @@ pub enum Error {
     #[error("Invalid RPC args")]
     RpcInvalidArgs,
 }
-
 
 pub type Result<T> = std::result::Result<T, Error>;

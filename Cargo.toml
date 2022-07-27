@@ -7,13 +7,20 @@ version = "0.1.0"
 [dependencies]
 onc-rpc = "*"
 xdr-rs-serialize = "0.2.4"
-tokio = { version = "^1", features = ["io-util", "net"] }
 thiserror = "1.0"
 byteorder = "1.3.4"
 bytes = "0.6.0"
 async-trait = "0.1.41"
 rand = "0.7.3"
 log = "0.4"
+
+tokio = { version = "^1", features = ["io-util", "net"], optional = true }
+async-std = { version = "^1", optional = true }
+
+[features]
+default = ["tokio"]
+tokio = ["dep:tokio"]
+async-std = ["dep:async-std"]
 
 [dev-dependencies]
 tokio = { version = "^1", features = ["net", "rt"] }
