@@ -3,6 +3,7 @@ authors = ["Raphael Bernhard <beraphae@gmail.com>"]
 edition = "2018"
 name = "async-vxi11"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 onc-rpc = "*"
